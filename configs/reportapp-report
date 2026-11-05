@@ -1,0 +1,4 @@
+# ReportApp traffic report
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/15 * * * * reportapp /usr/local/bin/reportapp-traffic-report > /srv/applogs/reportapp/traffic-report.txt 2>&1

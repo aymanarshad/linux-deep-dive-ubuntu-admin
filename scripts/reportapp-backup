@@ -1,0 +1,45 @@
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+BACKUP_DIR="/srv/backup"
+ARCHIVE_DIR="$BACKUP_DIR/archive"
+MIRROR_DIR="$BACKUP_DIR/mirror"
+KEEP="${KEEP:-5}"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+log() {
+    echo "[reportapp-backup] $1"
+}
+
+if ! mountpoint -q "$BACKUP_DIR"; then
+    log "ERROR: $BACKUP_DIR is not mounted"
+    exit 1
+fi
+
+mkdir -p "$ARCHIVE_DIR" "$MIRROR_DIR"
+
+log "rsync mirror -> $MIRROR_DIR"
+rsync -a --delete /srv/app/reportapp/ "$MIRROR_DIR/"
+
+ARCHIVE="$ARCHIVE_DIR/reportapp-$TIMESTAMP.tar.gz"
+
+log "creating $ARCHIVE"
+tar -czf "$ARCHIVE" -C / srv/app/reportapp etc/reportapp
+
+tar -tzf "$ARCHIVE" > /dev/null
+sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+
+log "applying retention (keep $KEEP)"
+
+mapfile -t OLD_ARCHIVES < <(
+    ls -1t "$ARCHIVE_DIR"/reportapp-*.tar.gz 2>/dev/null | tail -n +$((KEEP + 1))
+)
+
+for old in "${OLD_ARCHIVES[@]}"; do
+    rm -f "$old" "$old.sha256"
+    log "removed $old"
+done
+
+log "done: $(du -h "$ARCHIVE" | cut -f1) $ARCHIVE"
+

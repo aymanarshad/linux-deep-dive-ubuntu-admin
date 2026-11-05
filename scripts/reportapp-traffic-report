@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+LOG="${1:-/srv/applogs/reportapp/access.log}"
+
+if [[ ! -r "$LOG" ]]; then
+    echo "ERROR: cannot read $LOG" >&2
+    exit 2
+fi
+
+echo "=== ReportApp traffic report: $LOG ==="
+
+echo "Generated      : $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+awk '{
+    n++
+    b += $10
+}
+END {
+    printf "Total requests : %d\n", n
+    printf "Total bytes    : %d\n", b
+}' "$LOG"
+
+echo "Status codes:"
+
+awk '{print $9}' "$LOG" |
+sort |
+uniq -c |
+sort -rn
+
+echo "Top 5 clients:"
+
+awk '{print $1}' "$LOG" |
+sort |
+uniq -c |
+sort -rn |
+awk 'NR<=5'
+
+awk '{
+    n++
+    if ($9 ~ /^5/) e++
+}
+END {
+    printf "5xx error rate : %.2f%%\n",
+    (n ? e * 100 / n : 0)
+}' "$LOG"
+

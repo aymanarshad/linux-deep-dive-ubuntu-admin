@@ -1,0 +1,11 @@
+/srv/applogs/reportapp/*.log {
+    daily
+    rotate 7
+    maxsize 50M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su reportapp reportapp
+}
