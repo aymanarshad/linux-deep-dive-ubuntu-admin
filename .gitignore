@@ -10,3 +10,12 @@
 __pycache__/
 restore-test/
 
+# Environment and sensitive configuration
+*.env
+
+# Backup files
+*.bak
+reportapp-backup
+
+#Debug and trace output
+*.trace
